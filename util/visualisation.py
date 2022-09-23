@@ -2,7 +2,7 @@ import cv2
 
 
 def draw_textlines(frame, textlines:list, x_start=10, y_start=70):
-    i_increment = 30
+    i_increment = 35
     for i, line in enumerate(textlines):
         y = i*i_increment + y_start
         cv2.putText(img=frame, text=line, org=(x_start, y), 
@@ -15,4 +15,8 @@ def draw_checkpoint_line(frame, line_coords):
 
 def draw_rectangles(frame, rectangles):
     for rectangle in rectangles:
-        cv2.rectangle(frame,rectangle[0],rectangle[1],(0,255,0),3)
+        #print((round(rectangle[0]), round(rectangle[1])),
+        #    (round(rectangle[2]), round(rectangle[3])))
+        cv2.rectangle(frame,(round(rectangle[0]), round(rectangle[1])),
+            (round(rectangle[2]), round(rectangle[3])),
+            color=(0,0,255),thickness=3)
