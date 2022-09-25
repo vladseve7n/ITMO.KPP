@@ -30,6 +30,11 @@ def main():
     os.makedirs(output_path, exist_ok=True)
     CHECKPOINT_LINE_COORDS = [(150, 0), (150, 720)] # TODO: ask for these coords as cli args
 
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+    out = cv2.VideoWriter(output_path + '/output.avi',
+                          cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
+
     car_detector = CarDetector()
     plate_number_detector = PlateNumberDetector()
 
@@ -51,13 +56,10 @@ def main():
         draw_checkpoint_line(res_frame, CHECKPOINT_LINE_COORDS)
         draw_rectangles(res_frame, car_bboxes)
         draw_textlines(res_frame, ['Car passed', 'Checkpoint opened'])
-        cv2.imwrite(f'{TEMP_FOLDER_PATH}/{frame_num}.jpg',res_frame)
-        frame_num += 1
+        out.write(res_frame)
     cap.release()
     cv2.destroyAllWindows()
-    convert_images_to_video(TEMP_FOLDER_PATH, f'{output_path}/result_video_from_camera_1.mp4')
-    # Remove temp dir
-    shutil.rmtree(TEMP_FOLDER_PATH)
+    out.release()
 
 
 if __name__ == '__main__':
