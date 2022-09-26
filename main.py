@@ -6,7 +6,7 @@ from car_detection import CarDetector
 from plate_number_detection import PlateNumberDetector
 from checkpoint_passing import is_checkpoint_passed, is_plate_number_allowed
 from util.video import convert_images_to_video
-from util.visualisation import draw_textlines, draw_checkpoint_line, draw_rectangles 
+from util.visualisation import draw_textlines, draw_checkpoint_line, draw_rectangles, draw_plate_polygon
 
 
 def main():
@@ -45,8 +45,9 @@ def main():
             break 
         # 1. Detect cars on the frame
         car_bboxes = car_detector.detect(frame)
+        plate_polygon = plate_number_detector.detect(frame)
         # 2. Detect if car passed the checkpoint line
-        # 3. crop car bounding box
+        # 3. crop car boundin  g box
         # 4. Detect plate number of the nearest car
         # Use some standard library like Nomeroff
         # 5. Open the gate if plate number in the list of allowed number plates.
@@ -55,8 +56,13 @@ def main():
         res_frame = frame.copy()
         draw_checkpoint_line(res_frame, CHECKPOINT_LINE_COORDS)
         draw_rectangles(res_frame, car_bboxes)
+        draw_plate_polygon(res_frame, plate_polygon)
+
         draw_textlines(res_frame, ['Car passed', 'Checkpoint opened'])
+        cv2.imshow('test', res_frame)
+        cv2.waitKey(0)
         out.write(res_frame)
+
     cap.release()
     cv2.destroyAllWindows()
     out.release()
