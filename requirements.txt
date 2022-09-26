@@ -6,8 +6,6 @@ tqdm
 matplotlib
 Pillow
 requests
-torch
-torchvision
 seaborn
 
 cython
