@@ -14,7 +14,7 @@ from ocr_model.model import OCR_CRNN
 
 
 def prepare_plate_for_ocr(frame, plate_polygon):
-    plate_num_img = cv2.imread('A001BP54.png')
+    plate_num_img = cv2.imread('misc/test_plate.png')
     plate_num_img = cv2.cvtColor(plate_num_img, cv2.COLOR_BGR2RGB) 
     return plate_num_img
     
