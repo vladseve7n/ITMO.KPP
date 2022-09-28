@@ -2,9 +2,17 @@ import cv2
 import numpy as np
 
 
-def draw_info_table(frame, frame_info) -> np.array:
-    info_table = np.zeros((frame.shape[0], 400, 3), dtype='uint8')
+def scale_image(img, scale_factor: int = 900):
+    scaler = max(img.shape[0], img.shape[1]) / scale_factor
+    if scaler == 0:
+        return img
+    return cv2.resize(img, (int(img.shape[1] / scaler),
+                            int(img.shape[0] / scaler)), cv2.INTER_NEAREST)
 
+
+def draw_info_table(frame, frame_info, num_plate) -> np.array:
+    info_table = np.zeros((frame.shape[0], 400, 3), dtype='uint8')
+    num_plate = scale_image(num_plate, 200)
     cv2.putText(img=info_table, text=f'Car colour: {frame_info.car_colour}', org=(5, 50),
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(255, 255, 255), thickness=2)
 
@@ -13,6 +21,9 @@ def draw_info_table(frame, frame_info) -> np.array:
 
     cv2.putText(img=info_table, text=f'Car plate: {frame_info.car_plate}', org=(5, 110),
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(255, 255, 255), thickness=2)
+
+    if num_plate is not None:
+        info_table[150:150+num_plate.shape[0], :num_plate.shape[1]] = num_plate
 
     frame = np.hstack((frame, info_table))
     return frame
