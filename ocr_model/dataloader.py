@@ -40,6 +40,7 @@ class NumberplatesDataset(Dataset):
         target_tensor = PLATE_SYMBOLS_MAPPING['pad_token']*torch.ones(self.max_target_len)
         plate_number = filename.replace('.png','')
         if '_' in plate_number:
+            #print(plate_number)
             plate_number = plate_number[:-2]
         plate_number = torch.Tensor([PLATE_SYMBOLS_MAPPING[sym] for sym in plate_number])
         target_tensor[:plate_number.shape[0]] = plate_number

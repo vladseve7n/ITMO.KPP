@@ -11,7 +11,7 @@ torch.backends.cudnn.determinstic = True
 torch.backends.cudnn.benchmark = False
 
 
-model = OCR_CRNN('/home/dmitriy/projects/ITMO.KPP/autoriaNumberplateOcrRu-2021-09-01/test/img')
-trainer = pl.Trainer(accelerator="auto", gpus=1, max_epochs=40)
+model = OCR_CRNN('/home/dmitriy/projects/ITMO.KPP/autoriaNumberplateOcrRu-2021-09-01/train/img')
+trainer = pl.Trainer(accelerator="auto", gpus=1, max_epochs=50)
 trainer.fit(model)
     
