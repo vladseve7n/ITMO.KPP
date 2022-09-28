@@ -46,7 +46,7 @@ def main():
 
     car_detector = CarDetector()
     plate_number_detector = PlateNumberDetector(
-        ocr_checkpoint_path='/home/dmitriy/projects/ITMO.KPP/ocr_model/lightning_logs/version_10/checkpoints/epoch=39-step=1199.ckpt')
+        ocr_checkpoint_path='misc/test_checkpoint.ckpt')
 
     while cap.isOpened():
         ret, frame = cap.read()
