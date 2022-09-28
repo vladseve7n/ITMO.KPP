@@ -1,4 +1,5 @@
 from itertools import groupby
+import fastwer
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -13,11 +14,12 @@ gru_hidden_size = 128
 gru_num_layers = 2
 cnn_output_height = 4
 cnn_output_width = 32
-digits_per_sequence = 5
-number_of_sequences = 10000
-dataset_sequences = []
-dataset_labels = []
 BATCH_SIZE = 128
+
+TOKEN2SYMBOLS_MAPPING = {0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 
+        10: 'A', 11: 'B', 12: 'E', 13: 'K', 14: 'M', 15: 'H', 16: 'O', 17: 'P',
+         18: 'C', 19: 'T', 20: 'Y', 21: 'X'
+    }
 
 
 class OCR_CRNN(pl.LightningModule):
@@ -34,9 +36,6 @@ class OCR_CRNN(pl.LightningModule):
 				nn.Conv2d(32, 64, kernel_size=(3, 3)),
 				nn.InstanceNorm2d(64),
 				nn.LeakyReLU(),
-				# nn.Conv2d(64, 64, kernel_size=(3, 3)),
-				# nn.InstanceNorm2d(64),
-				# nn.LeakyReLU(),
 				nn.Conv2d(64, 64, kernel_size=(3, 3), stride=2),
 				nn.InstanceNorm2d(64),
 				nn.LeakyReLU(),
@@ -51,7 +50,6 @@ class OCR_CRNN(pl.LightningModule):
 	def forward(self, x):
 		batch_size = x.shape[0]
 		out = self.cnn(x)
-		print(out.shape)
 		out = out.reshape(batch_size, -1, self.gru_input_size)
 		out, _ = self.gru(out)
 		out = torch.stack([F.log_softmax(self.fc(out[i]), dim=-1) for i in range(out.shape[0])])
@@ -62,7 +60,7 @@ class OCR_CRNN(pl.LightningModule):
 		return optimizer
 
 	def training_step(self, train_batch, batch_idx):
-		x_train, y_train = train_batch
+		x_train, y_train, target_lengths = train_batch
 		# mask = y_train.ne(-1)
 		# nonpadded_symbols = torch.sum(mask, axis = 1)
 		# print(nonpadded_symbols)
@@ -75,33 +73,35 @@ class OCR_CRNN(pl.LightningModule):
 		y_pred = self(x_train)
 		y_pred = y_pred.permute(1, 0, 2)  # y_pred.shape == torch.Size([64, 32, 11]
 		input_lengths = torch.IntTensor(batch_size).fill_(cnn_output_width)
-		target_lengths = torch.IntTensor([len(t) for t in y_train])
+		#target_lengths = torch.IntTensor([len(t) for t in y_train])
 		loss = self.criterion(y_pred, y_train, input_lengths, target_lengths)
 		self.log('train_loss', loss)
 		return loss
 
 	def validation_step(self, val_batch, batch_idx):
-		x_val, y_val = val_batch
+		x_val, y_val, target_lengths = val_batch
 		batch_size = x_val.shape[0]
 		#x_val = x_val.view(x_val.shape[0], 1, x_val.shape[1], x_val.shape[2])
 		y_pred = self(x_val)
 		y_pred = y_pred.permute(1, 0, 2)
 		input_lengths = torch.IntTensor(batch_size).fill_(cnn_output_width)
-		target_lengths = torch.IntTensor([len(t) for t in y_val])
+		#target_lengths = torch.IntTensor([len(t) for t in y_val])
 		loss = self.criterion(y_pred, y_val, input_lengths, target_lengths)
 		_, max_index = torch.max(y_pred, dim=2)
 		val_correct = 0
 		val_total = batch_size
+		CERs = []
 		for i in range(batch_size):
 			raw_prediction = list(max_index[:, i].detach().cpu().numpy())
-			#print(raw_prediction)
 			prediction = torch.IntTensor([c for c, _ in groupby(raw_prediction) if c != blank_label]).cuda()
-			# if i== 21:
-			# 	print(f'Pred: {prediction},GT: {y_val[i]}')
-			if len(prediction) == len(y_val[i]) and torch.all(prediction.eq(y_val[i])):
-				val_correct += 1
+			output = ''.join([TOKEN2SYMBOLS_MAPPING[token] for token in prediction.tolist() if token != blank_label])
+			ref = ''.join([TOKEN2SYMBOLS_MAPPING[token] for token in y_val[i].tolist() if token != blank_label])
+			CER = fastwer.score_sent(output, ref, char_level=True)
+			CERs.append(CER)
+			# if len(prediction) == len(y_val[i]) and torch.all(prediction.eq(y_val[i])):
+			# 	val_correct += 1
 		self.log('val_loss', loss)
-		self.log('rate of predicted correctly', val_correct/val_total)
+		self.log('Mean CER per batch', sum(CERs)/batch_size)
 
 	def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders

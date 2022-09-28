@@ -40,17 +40,17 @@ class NumberplatesDataset(Dataset):
         target_tensor = PLATE_SYMBOLS_MAPPING['pad_token']*torch.ones(self.max_target_len)
         plate_number = filename.replace('.png','')
         if '_' in plate_number:
-            #print(plate_number)
             plate_number = plate_number[:-2]
         plate_number = torch.Tensor([PLATE_SYMBOLS_MAPPING[sym] for sym in plate_number])
-        target_tensor[:plate_number.shape[0]] = plate_number
+        plate_num_len = plate_number.shape[0]
+        target_tensor[:plate_num_len] = plate_number
         plate_num_img = cv2.imread(f'{self.images_path}/{filename}')
         plate_num_img = cv2.cvtColor(plate_num_img, cv2.COLOR_BGR2RGB) 
         plate_num_img = self.image_transform(plate_num_img)
-        # pad plate number
         return (
             plate_num_img,
-            target_tensor
+            target_tensor,
+            plate_num_len
         )
 
     def __len__(self):
