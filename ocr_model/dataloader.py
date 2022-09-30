@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import cv2
-
+from PIL import Image
 import torch
 import torchvision
 import torch.nn.functional as F
@@ -26,11 +26,15 @@ class NumberplatesDataset(Dataset):
         self.images_path = images_path
         self.filenames = os.listdir(self.images_path)
         self.image_transform = torchvision.transforms.Compose([
-                                torchvision.transforms.ToTensor(),
-                                torchvision.transforms.Resize((64, 256)),
-                                torchvision.transforms.Normalize(
-                                    mean=[0.5] * 3,
-                                    std=[0.5] * 3)
+            torchvision.transforms.Resize((224,224)),
+            torchvision.transforms.ToTensor(),
+            #torchvision.transforms.CenterCrop(224),
+            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                                # torchvision.transforms.ToTensor(),
+                                # torchvision.transforms.Resize((64, 256)),
+                                # torchvision.transforms.Normalize(
+                                #     mean=[0.5] * 3,
+                                #     std=[0.5] * 3)
                             ])
         self.max_target_len = 11
 
@@ -44,8 +48,9 @@ class NumberplatesDataset(Dataset):
         plate_number = torch.Tensor([PLATE_SYMBOLS_MAPPING[sym] for sym in plate_number])
         plate_num_len = plate_number.shape[0]
         target_tensor[:plate_num_len] = plate_number
-        plate_num_img = cv2.imread(f'{self.images_path}/{filename}')
-        plate_num_img = cv2.cvtColor(plate_num_img, cv2.COLOR_BGR2RGB) 
+        plate_num_img = Image.open(f'{self.images_path}/{filename}')
+        #plate_num_img = cv2.imread(f'{self.images_path}/{filename}')
+        #plate_num_img = cv2.cvtColor(plate_num_img, cv2.COLOR_BGR2RGB) 
         plate_num_img = self.image_transform(plate_num_img)
         return (
             plate_num_img,

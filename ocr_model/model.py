@@ -6,13 +6,12 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
 from dataloader import NumberplatesDataset
-
+from torchvision import models
 
 num_classes = 23 # 10 digits, 12 letters, 1 blank symbol
 blank_label = 22
 gru_hidden_size = 128
-gru_num_layers = 2
-cnn_output_height = 4
+gru_num_layers = 2 # TODO: put 6
 cnn_output_width = 32
 BATCH_SIZE = 128
 
@@ -40,7 +39,9 @@ class OCR_CRNN(pl.LightningModule):
 				nn.InstanceNorm2d(64),
 				nn.LeakyReLU(),
 		)
-		self.gru_input_size = cnn_output_height * 64
+		self.res_net = models.resnet18(pretrained=False)
+		self.gru_input_size = 64
+		self.fc_1 = nn.Linear(1000, 2048)
 		self.gru = nn.GRU(self.gru_input_size, gru_hidden_size, gru_num_layers, 
                           batch_first=True, bidirectional=True)
 		self.fc = nn.Linear(gru_hidden_size * 2, num_classes)
@@ -49,7 +50,10 @@ class OCR_CRNN(pl.LightningModule):
 
 	def forward(self, x):
 		batch_size = x.shape[0]
-		out = self.cnn(x)
+		#out = self.cnn(x)
+		out = self.res_net(x)
+		#print(out.shape)
+		out = self.fc_1(out)
 		out = out.reshape(batch_size, -1, self.gru_input_size)
 		out, _ = self.gru(out)
 		out = torch.stack([F.log_softmax(self.fc(out[i]), dim=-1) for i in range(out.shape[0])])
@@ -61,35 +65,17 @@ class OCR_CRNN(pl.LightningModule):
 
 	def training_step(self, train_batch, batch_idx):
 		x_train, y_train, target_lengths = train_batch
-		# mask = y_train.ne(-1)
-		# nonpadded_symbols = torch.sum(mask, axis = 1)
-		# print(nonpadded_symbols)
-		# y_train_unpadded = []
-		# for i, number_plate in enumerate(y_train):
-		# 	y_train_unpadded.append(number_plate[:nonpadded_symbols[i]])
-		# y_train = torch.Tensor(y_train_unpadded)
-		batch_size = x_train.shape[0]  # x_train.shape == torch.Size([64, 28, 140])
-		#x_train = x_train.view(x_train.shape[0], 1, x_train.shape[1], x_train.shape[2])
+		batch_size = x_train.shape[0]
 		y_pred = self(x_train)
-		y_pred = y_pred.permute(1, 0, 2)  # y_pred.shape == torch.Size([64, 32, 11]
+		y_pred = y_pred.permute(1, 0, 2)
 		input_lengths = torch.IntTensor(batch_size).fill_(cnn_output_width)
-		#target_lengths = torch.IntTensor([len(t) for t in y_train])
 		loss = self.criterion(y_pred, y_train, input_lengths, target_lengths)
 		self.log('train_loss', loss)
 		return loss
 
-	def validation_step(self, val_batch, batch_idx):
-		x_val, y_val, target_lengths = val_batch
-		batch_size = x_val.shape[0]
-		#x_val = x_val.view(x_val.shape[0], 1, x_val.shape[1], x_val.shape[2])
-		y_pred = self(x_val)
-		y_pred = y_pred.permute(1, 0, 2)
-		input_lengths = torch.IntTensor(batch_size).fill_(cnn_output_width)
-		#target_lengths = torch.IntTensor([len(t) for t in y_val])
-		loss = self.criterion(y_pred, y_val, input_lengths, target_lengths)
+	def _calculate_metrics(self, y_pred, y_val, batch_size):
 		_, max_index = torch.max(y_pred, dim=2)
 		val_correct = 0
-		val_total = batch_size
 		CERs = []
 		for i in range(batch_size):
 			raw_prediction = list(max_index[:, i].detach().cpu().numpy())
@@ -98,10 +84,24 @@ class OCR_CRNN(pl.LightningModule):
 			ref = ''.join([TOKEN2SYMBOLS_MAPPING[token] for token in y_val[i].tolist() if token != blank_label])
 			CER = fastwer.score_sent(output, ref, char_level=True)
 			CERs.append(CER)
-			# if len(prediction) == len(y_val[i]) and torch.all(prediction.eq(y_val[i])):
-			# 	val_correct += 1
+			if output == ref:
+				val_correct += 1
+		cer = sum(CERs)/batch_size
+		accuracy = val_correct/batch_size
+		return cer, accuracy
+
+
+	def validation_step(self, val_batch, batch_idx):
+		x_val, y_val, target_lengths = val_batch
+		batch_size = x_val.shape[0]
+		y_pred = self(x_val)
+		y_pred = y_pred.permute(1, 0, 2)
+		input_lengths = torch.IntTensor(batch_size).fill_(cnn_output_width)
+		loss = self.criterion(y_pred, y_val, input_lengths, target_lengths)
+		cer, accuracy = self._calculate_metrics(y_pred, y_val, batch_size)
 		self.log('val_loss', loss)
-		self.log('Mean CER per batch', sum(CERs)/batch_size)
+		self.log('Mean CER per batch', cer)
+		self.log('Accuracy', accuracy)
 
 	def setup(self, stage=None):
         # Assign train/val datasets for use in dataloaders
