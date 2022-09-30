@@ -5,7 +5,7 @@ from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from dataloader import NumberplatesDataset
+from ocr_model.dataloader import NumberplatesDataset
 from torchvision import models
 
 num_classes = 23 # 10 digits, 12 letters, 1 blank symbol

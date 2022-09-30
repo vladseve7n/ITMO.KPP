@@ -2,6 +2,7 @@ from curses import raw
 from typing import List
 from itertools import groupby
 
+from PIL import Image
 import cv2
 import numpy as np
 import torch
@@ -37,11 +38,15 @@ class PlateNumberDetector:
             data_dir='autoriaNumberplateOcrRu-2021-09-01/test/img')
         self.ocr_model.eval()
         self.image_transform = torchvision.transforms.Compose([
-                                torchvision.transforms.ToTensor(),
-                                torchvision.transforms.Resize((64, 256)),
-                                torchvision.transforms.Normalize(
-                                    mean=[0.5] * 3,
-                                    std=[0.5] * 3)
+            torchvision.transforms.Resize((224,224)),
+            torchvision.transforms.ToTensor(),
+            #torchvision.transforms.CenterCrop(224),
+            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                                # torchvision.transforms.ToTensor(),
+                                # torchvision.transforms.Resize((64, 256)),
+                                # torchvision.transforms.Normalize(
+                                #     mean=[0.5] * 3,
+                                #     std=[0.5] * 3)
                             ])
 
     def detect(self, image: np.ndarray) -> np.array:
@@ -61,11 +66,13 @@ class PlateNumberDetector:
         return all_points
 
     def recognize_numplate_text(self, numplate_img) -> str:
+        numplate_img = Image.fromarray(np.uint8(numplate_img))
         numplate_img = self.image_transform(numplate_img)
+        numplate_img = torch.unsqueeze(numplate_img, 0)
         with torch.no_grad():
             predicted_tokens = self.ocr_model(numplate_img)
         _, max_index = torch.max(predicted_tokens, dim=2)
-        raw_prediction = list(max_index[:, 0].detach().cpu().numpy())
+        raw_prediction = list(max_index[0].detach().cpu().numpy())
         prediction = torch.IntTensor([c for c, _ in groupby(raw_prediction) if c != blank_token]).cuda()
         numplate_str = ''.join([TOKEN2SYMBOLS_MAPPING[token] for token in prediction.tolist() if token != blank_token])
         return numplate_str
