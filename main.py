@@ -60,7 +60,7 @@ def main():
 
         car_bboxes = car_detector.detect(frame)
         if len(car_bboxes) == 0:
-            res_frame = draw_info_table(res_frame, frame_info)
+            res_frame = draw_info_table(res_frame, frame_info, num_plate=None)
             draw_checkpoint_line(res_frame, CHECKPOINT_LINE_COORDS)
             draw_interested_area(res_frame, INTERESTED_AREA)
             out.write(res_frame)
@@ -88,8 +88,8 @@ def main():
         draw_interested_area(res_frame, INTERESTED_AREA)
         res_frame = draw_info_table(res_frame, frame_info, num_plate_img)
         out.write(res_frame)
-        cv2.imshow('test', res_frame)
-        cv2.waitKey(1)
+        #cv2.imshow('test', res_frame)
+        #cv2.waitKey(1)
 
 
     cap.release()
