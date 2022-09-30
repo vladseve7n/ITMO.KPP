@@ -31,6 +31,8 @@ ipywidgets
 gevent
 termcolor
 sklearn
+pybind11
+fastwer
 
 # git repos
 PyTurboJPEG @ git+https://github.com/lilohuang/PyTurboJPEG.git
