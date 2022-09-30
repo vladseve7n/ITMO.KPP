@@ -71,11 +71,11 @@ def main():
         # 2. Detect if car passed the checkpoint line
         # 3. crop car bounding box
         # 4. Detect plate number of the nearest car
-        plate_polygon = plate_number_detector.detect(frame)
-        num_plate_img = prepare_plate_for_ocr(frame, plate_polygon)
+        plate_polygon, images_points = plate_number_detector.detect(frame)
+        num_plate_img = None
         if plate_polygon is not None:
+            num_plate_img = prepare_plate_for_ocr([frame], images_points)
             frame_info.car_plate = plate_number_detector.recognize_numplate_text(num_plate_img)
-            #frame_info.car_plate = "Undefined"
         # 5. Open the gate if plate number in the list of allowed number plates.
         # Or close the gate if there are no allowed cars nearby
 
@@ -86,10 +86,10 @@ def main():
 
         draw_checkpoint_line(res_frame, CHECKPOINT_LINE_COORDS)
         draw_interested_area(res_frame, INTERESTED_AREA)
-        res_frame = draw_info_table(res_frame, frame_info)
+        res_frame = draw_info_table(res_frame, frame_info, num_plate_img)
         out.write(res_frame)
-        # cv2.imshow('test', res_frame)
-        # cv2.waitKey(0)
+        cv2.imshow('test', res_frame)
+        cv2.waitKey(1)
 
 
     cap.release()
