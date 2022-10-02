@@ -52,7 +52,7 @@
     },
     {
       "camera_name": "test_cam3",
-      "camera_path": "test_videos/test_video_cars.mp4",
+      "camera_path": "test_videos/test_video.mp4",
       "number_plates": ["A301PO174"],
       "check_point_line_coords": [
         [
