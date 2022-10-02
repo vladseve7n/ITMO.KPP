@@ -65,11 +65,11 @@ class Camera:
         car_box = self.car_bboxes[0]  # TODO: find nearest car
         return self.frame[int(car_box[1]):int(car_box[3]), int(car_box[0]):int(car_box[2]), :]
 
-    def detect_if_car_is_passed(self, num_of_points: int = 3):
+    def detect_if_car_is_passed(self, num_of_points: int = 10):
         check_points = np.linspace(self.cp_line[0], self.cp_line[1], num_of_points, True)
         car_box = self.car_bboxes[0]  # TODO: find nearest car
         x_shift = self.interested_area[0][0]
-        y_shift = self.interested_area[1][1]
+        y_shift = self.interested_area[0][1]
         passed_points = 0
         for p in check_points:
 
