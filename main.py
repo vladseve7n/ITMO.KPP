@@ -50,18 +50,18 @@ def main():
         for camera in cameras_with_cars:
             camera.detect_if_car_is_passed()
 
-        cars_that_dont_passed = clean_cameras_where_car_is_passed(cameras_with_cars)
+        cars_that_do_not_passed = clean_cameras_where_car_is_passed(cameras_with_cars)
 
-        car_images = [camera.get_car_image() for camera in cars_that_dont_passed]
+        car_images = [camera.get_car_image() for camera in cars_that_do_not_passed]
 
         car_colours = car_detector.detect_car_colour(car_images)
         car_types = car_detector.detect_car_type(car_images)
 
-        for camera, colour, car_type in zip(cars_that_dont_passed, car_colours, car_types):
+        for camera, colour, car_type in zip(cars_that_do_not_passed, car_colours, car_types):
             camera.info.car_type = car_type
             camera.info.car_colour = colour
 
-        for camera, car_img in zip(cameras, car_images):
+        for camera, car_img in zip(cars_that_do_not_passed, car_images):
             plate_polygon, images_points = plate_number_detector.detect(car_img)
             num_plate_img = None
             if plate_polygon is not None:
