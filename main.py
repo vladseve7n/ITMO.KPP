@@ -3,7 +3,7 @@ import gc
 import json
 import os
 
-from cameras import Camera, check_cameras, check_if_car_exists
+from cameras import Camera, check_cameras, check_if_car_exists, clean_cameras_where_car_is_passed
 from car_detection import CarDetector
 from plate_number_detection import PlateNumberDetector, prepare_plate_for_ocr
 
@@ -47,17 +47,19 @@ def main():
 
         cameras_with_cars = check_if_car_exists(car_bboxes, cameras)
 
-        car_images = [camera.get_car_image() for camera in cameras_with_cars]
+        for camera in cameras_with_cars:
+            camera.detect_if_car_is_passed()
+
+        cars_that_dont_passed = clean_cameras_where_car_is_passed(cameras)
+
+        car_images = [camera.get_car_image() for camera in cars_that_dont_passed]
 
         car_colours = car_detector.detect_car_colour(car_images)
         car_types = car_detector.detect_car_type(car_images)
 
-        for camera, colour, car_type in zip(cameras_with_cars, car_colours, car_types):
+        for camera, colour, car_type in zip(cars_that_dont_passed, car_colours, car_types):
             camera.info.car_type = car_type
             camera.info.car_colour = colour
-
-        for camera in cameras_with_cars:
-            camera.detect_if_car_is_passed()
 
         for camera, car_img in zip(cameras, car_images):
             plate_polygon, images_points = plate_number_detector.detect(car_img)
@@ -65,6 +67,8 @@ def main():
             if plate_polygon is not None:
                 num_plate_img = prepare_plate_for_ocr([car_img], images_points)
                 camera.info.car_plate = plate_number_detector.recognize_numplate_text(num_plate_img)
+            else:
+                camera.info.car_plate = None
             camera.set_plate(num_plate_img)
 
         for camera in cameras:
