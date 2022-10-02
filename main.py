@@ -50,7 +50,7 @@ def main():
         for camera in cameras_with_cars:
             camera.detect_if_car_is_passed()
 
-        cars_that_dont_passed = clean_cameras_where_car_is_passed(cameras)
+        cars_that_dont_passed = clean_cameras_where_car_is_passed(cameras_with_cars)
 
         car_images = [camera.get_car_image() for camera in cars_that_dont_passed]
 
