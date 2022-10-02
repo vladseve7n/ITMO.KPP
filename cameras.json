@@ -1,0 +1,104 @@
+{
+  "cameras": [
+    {
+      "camera_name": "test_cam",
+      "camera_path": "test_videos/test_video_cars.mp4",
+      "number_plates": ["A301PO174"],
+      "check_point_line_coords": [
+        [
+          150,
+          0
+        ],
+        [
+          150,
+          720
+        ]
+      ],
+      "interested_area": [
+        [
+          100,
+          0
+        ],
+        [
+          600,
+          720
+        ]
+      ]
+    },
+    {
+      "camera_name": "test_cam2",
+      "camera_path": "test_videos/test_video_kpp.mp4",
+      "number_plates": ["E040TY190"],
+      "check_point_line_coords": [
+        [
+          0,
+          600
+        ],
+        [
+          1680,
+          600
+        ]
+      ],
+      "interested_area": [
+        [
+          100,
+          350
+        ],
+        [
+          1400,
+          720
+        ]
+      ]
+    },
+    {
+      "camera_name": "test_cam3",
+      "camera_path": "test_videos/test_video_cars.mp4",
+      "number_plates": ["A301PO174"],
+      "check_point_line_coords": [
+        [
+          150,
+          0
+        ],
+        [
+          150,
+          720
+        ]
+      ],
+      "interested_area": [
+        [
+          100,
+          0
+        ],
+        [
+          600,
+          720
+        ]
+      ]
+    },
+    {
+      "camera_name": "test_cam4",
+      "camera_path": "test_videos/test_video_cars.mp4",
+      "number_plates": ["A301PO174"],
+      "check_point_line_coords": [
+        [
+          150,
+          0
+        ],
+        [
+          150,
+          720
+        ]
+      ],
+      "interested_area": [
+        [
+          100,
+          0
+        ],
+        [
+          600,
+          720
+        ]
+      ]
+    }
+  ]
+}
