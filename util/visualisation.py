@@ -28,14 +28,14 @@ def draw_info_table(frame: np.array, frame_info, num_plate: np.array) -> np.arra
         cv2.putText(img=info_table, text=f'Car passed', org=(5, 250),
                     fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 0), thickness=2)
     else:
-        cv2.putText(img=info_table, text=f'Car is not passed', org=(5, 250),
+        cv2.putText(img=info_table, text=f'Car didn\'t pass', org=(5, 250),
                     fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 0, 255), thickness=2)
 
     if frame_info.is_car_have_access:
         cv2.putText(img=info_table, text=f'Car has access', org=(5, 280),
                     fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 255, 0), thickness=2)
     else:
-        cv2.putText(img=info_table, text=f'Car has not access', org=(5, 280),
+        cv2.putText(img=info_table, text=f'Car doesn\'t have access', org=(5, 280),
                     fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, color=(0, 0, 255), thickness=2)
 
     frame = np.hstack((frame, info_table))
@@ -48,7 +48,7 @@ def draw_interested_area(frame, INTERESTED_AREA):
 
 
 def draw_checkpoint_line(frame, line_coords):
-    cv2.line(frame, line_coords[0], line_coords[1], (255, 0, 0), 5)
+    cv2.line(frame, tuple(line_coords[0]), tuple(line_coords[1]), (255, 0, 0), 5)
 
 
 def draw_rectangles(frame, rectangles):
