@@ -2,11 +2,11 @@ import math
 from itertools import groupby
 from typing import List
 
-from PIL import Image
 import cv2
 import numpy as np
 import torch
 import torchvision
+from PIL import Image
 
 from nomeroff_net import pipeline
 from nomeroff_net.image_loaders import DumpyImageLoader
@@ -123,9 +123,6 @@ def crop_number_plate_zones_from_images(images, images_points):
 
 def prepare_plate_for_ocr(frame, plate_polygon):
     plate_num_img = crop_number_plate_zones_from_images(frame, plate_polygon)
-    # plate_num_img = np.array(plate_num_img[0], dtype='uint8')
-    # cv2.imshow('plate', plate_num_img[0])
-    # cv2.waitKey()
     return plate_num_img[0]
 
 
@@ -148,23 +145,27 @@ class PlateNumberDetector:
                                                        data_dir='autoriaNumberplateOcrRu-2021-09-01/test/img')
         self.ocr_model.eval()
         self.image_transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize((224,224)),
+            torchvision.transforms.Resize((224, 224)),
             torchvision.transforms.ToTensor(),
-            #torchvision.transforms.CenterCrop(224),
+            # torchvision.transforms.CenterCrop(224),
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-                                # torchvision.transforms.ToTensor(),
-                                # torchvision.transforms.Resize((64, 256)),
-                                # torchvision.transforms.Normalize(
-                                #     mean=[0.5] * 3,
-                                #     std=[0.5] * 3)
-                            ])
+            # torchvision.transforms.ToTensor(),
+            # torchvision.transforms.Resize((64, 256)),
+            # torchvision.transforms.Normalize(
+            #     mean=[0.5] * 3,
+            #     std=[0.5] * 3)
+        ])
 
     def detect(self, image: np.ndarray) -> np.array:
-        images_bboxs, images = unzip(self.number_plate_localization([image]))
-        images_points, _ = unzip(self.number_plate_key_points_detection(unzip([images, images_bboxs])))
-        if len(images_points[0]) > 0:
-            return np.array(images_points[0], dtype='int')[0].reshape(-1, 1, 2), images_points
-        else:
+        try:
+            images_bboxs, images = unzip(self.number_plate_localization([image]))
+            images_points, _ = unzip(self.number_plate_key_points_detection(unzip([images, images_bboxs])))
+            if len(images_points[0]) > 0:
+                return np.array(images_points[0], dtype='int')[0].reshape(-1, 1, 2), images_points
+            else:
+                return None, None
+
+        except OverflowError:
             return None, None
 
     def detect_images(self, images: List[np.ndarray]) -> List[np.array]:
@@ -172,7 +173,10 @@ class PlateNumberDetector:
         images_points, _ = unzip(self.number_plate_key_points_detection(unzip([images, images_bboxs])))
         all_points = []
         for points in images_points:
-            all_points.append(np.array(points, dtype='int')[0].reshape(-1, 1, 2))
+            if len(points) > 0:
+                all_points.append((np.array(points, dtype='int')[0].reshape(-1, 1, 2), points))
+            else:
+                all_points.append((None, None))
         return all_points
 
     def recognize_numplate_text(self, numplate_img) -> str:
@@ -183,6 +187,6 @@ class PlateNumberDetector:
             predicted_tokens = self.ocr_model(numplate_img)
         _, max_index = torch.max(predicted_tokens, dim=2)
         raw_prediction = list(max_index[0].detach().cpu().numpy())
-        prediction = torch.IntTensor([c for c, _ in groupby(raw_prediction) if c != blank_token]).cuda()
+        prediction = torch.IntTensor([c for c, _ in groupby(raw_prediction) if c != blank_token])
         numplate_str = ''.join([TOKEN2SYMBOLS_MAPPING[token] for token in prediction.tolist() if token != blank_token])
         return numplate_str
