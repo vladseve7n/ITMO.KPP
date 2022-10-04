@@ -14,7 +14,7 @@ python main.py
 
 ### Training
 To train OCR model:
-1. Download train data and unzip it
+1. Download train data from https://nomeroff.net.ua/datasets/autoriaNumberplateOcrRu-2021-09-01.zip and unzip it
 2. Run train script:
 ```
 cd ocr_model
