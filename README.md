@@ -19,3 +19,9 @@ To train OCR model:
 cd ocr_model
 python train.py
 ```
+
+### Tensorboard logs
+To view tensorboard logs:
+1. Download archive https://disk.yandex.ru/d/f3rWwTvhddh0ow
+2. Unzip it
+3. Run tensorboard
