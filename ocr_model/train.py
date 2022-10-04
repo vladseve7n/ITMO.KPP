@@ -19,7 +19,7 @@ checkpoint_callback = ModelCheckpoint(
     save_top_k=1,
     monitor="Accuracy",
     mode="max")
-logger = TensorBoardLogger("lightning_logs", name="pretrained_resnet34_2GRU_multistep_lr_reflectpad_100ep")
+logger = TensorBoardLogger("lightning_logs", name="pretrained_resnet18_2GRU_multistep_lr_reflectpad_newsteps")
 trainer = pl.Trainer(accelerator="auto", gpus=1,
-    max_epochs=100, logger=logger, callbacks=[checkpoint_callback])
+    max_epochs=55, logger=logger, callbacks=[checkpoint_callback])
 trainer.fit(model)

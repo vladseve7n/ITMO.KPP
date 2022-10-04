@@ -27,7 +27,7 @@ class OCR_CRNN(pl.LightningModule):
 		super().__init__()
 		self.data_dir = data_dir
 		self.padding_type = padding_type
-		self.res_net = models.resnet34(pretrained=True)
+		self.res_net = models.resnet18(pretrained=True)
 		self.gru_input_size = 64
 		self.fc_1 = nn.Linear(1000, 2048)
 		self.gru = nn.GRU(self.gru_input_size, gru_hidden_size, gru_num_layers, 
@@ -47,7 +47,7 @@ class OCR_CRNN(pl.LightningModule):
 
 	def configure_optimizers(self):
 		optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-		scheduler = MultiStepLR(optimizer, milestones=[30, 40], gamma=0.5) # TODO: put [27,32,36,40,43,46]
+		scheduler = MultiStepLR(optimizer, milestones=[27,32,36,40,43,46], gamma=0.5) # was [30,40]
 		return [optimizer], [scheduler]
 
 	def training_step(self, train_batch, batch_idx):

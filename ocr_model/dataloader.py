@@ -22,9 +22,10 @@ class NumberplatesDataset(Dataset):
     def __init__(
         self, 
         images_path, padding_type='resize',
-        mode='train'):
+        mode='train', grascale=False):
         self.mode = mode
         self.padding_type = padding_type
+        self.grayscale = grascale
         self.images_path = images_path
         self.filenames = os.listdir(self.images_path)
         self.const_padding_transform = torchvision.transforms.Compose([
@@ -36,7 +37,6 @@ class NumberplatesDataset(Dataset):
             torchvision.transforms.Pad((0,56), padding_mode='reflect') # pad to 56*3x224
         ])
         self.image_transform = torchvision.transforms.Compose([
-            # torchvision.transforms.functional.rgb_to_grayscale(num_output_channels=3),
             torchvision.transforms.Resize((224,224)),
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -58,6 +58,9 @@ class NumberplatesDataset(Dataset):
             plate_num_img = self.const_padding_transform(plate_num_img)
         elif self.padding_type == 'reflect_padding':
             plate_num_img = self.reflect_padding_transform(plate_num_img)
+        if self.grayscale:
+            plate_num_img = torchvision.transforms.functional.rgb_to_grayscale(
+                plate_num_img, num_output_channels=3)
         plate_num_img = self.image_transform(plate_num_img)
         return (
             plate_num_img,
