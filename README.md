@@ -1,4 +1,5 @@
 # ITMO.KPP
+![Example](misc/test_cam.gif)
 This project simulates automated road checkpoint. 
 To run project on a test video:
 1. Download checkpoint from https://disk.yandex.ru/d/AhYyZ98ahahcVA and place it in 'misc' folder
