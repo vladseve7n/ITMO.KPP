@@ -3,15 +3,16 @@ import fastwer
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.optim.lr_scheduler import MultiStepLR
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
 from ocr_model.dataloader import NumberplatesDataset
 from torchvision import models
 
+
 num_classes = 23 # 10 digits, 12 letters, 1 blank symbol
 blank_label = 22
 gru_hidden_size = 128
-gru_num_layers = 2 # TODO: put 6
 cnn_output_width = 32
 BATCH_SIZE = 128
 
@@ -22,37 +23,23 @@ TOKEN2SYMBOLS_MAPPING = {0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6',
 
 
 class OCR_CRNN(pl.LightningModule):
-	def __init__(self, data_dir):
+	def __init__(self, data_dir, gru_num_layers=2, padding_type='resize'):
 		super().__init__()
 		self.data_dir = data_dir
-		self.cnn = nn.Sequential(
-				nn.Conv2d(3, 32, kernel_size=(3, 3), stride=2),
-				nn.InstanceNorm2d(32),
-				nn.LeakyReLU(),
-				nn.Conv2d(32, 32, kernel_size=(3, 3), stride=2),
-				nn.InstanceNorm2d(32),
-				nn.LeakyReLU(),
-				nn.Conv2d(32, 64, kernel_size=(3, 3)),
-				nn.InstanceNorm2d(64),
-				nn.LeakyReLU(),
-				nn.Conv2d(64, 64, kernel_size=(3, 3), stride=2),
-				nn.InstanceNorm2d(64),
-				nn.LeakyReLU(),
-		)
-		self.res_net = models.resnet18(pretrained=False)
+		self.padding_type = padding_type
+		self.res_net = models.resnet18(pretrained=True)
 		self.gru_input_size = 64
 		self.fc_1 = nn.Linear(1000, 2048)
+		
 		self.gru = nn.GRU(self.gru_input_size, gru_hidden_size, gru_num_layers, 
                           batch_first=True, bidirectional=True)
 		self.fc = nn.Linear(gru_hidden_size * 2, num_classes)
-
 		self.criterion = nn.CTCLoss(blank=blank_label, reduction='mean', zero_infinity=True)
+		self.save_hyperparameters(ignore=['data_dir'])
 
 	def forward(self, x):
 		batch_size = x.shape[0]
-		#out = self.cnn(x)
 		out = self.res_net(x)
-		#print(out.shape)
 		out = self.fc_1(out)
 		out = out.reshape(batch_size, -1, self.gru_input_size)
 		out, _ = self.gru(out)
@@ -61,7 +48,8 @@ class OCR_CRNN(pl.LightningModule):
 
 	def configure_optimizers(self):
 		optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-		return optimizer
+		scheduler = MultiStepLR(optimizer, milestones=[27,32,36,40,43,46], gamma=0.5) # was [30,40]
+		return [optimizer], [scheduler]
 
 	def training_step(self, train_batch, batch_idx):
 		x_train, y_train, target_lengths = train_batch
@@ -90,7 +78,6 @@ class OCR_CRNN(pl.LightningModule):
 		accuracy = val_correct/batch_size
 		return cer, accuracy
 
-
 	def validation_step(self, val_batch, batch_idx):
 		x_val, y_val, target_lengths = val_batch
 		batch_size = x_val.shape[0]
@@ -104,14 +91,20 @@ class OCR_CRNN(pl.LightningModule):
 		self.log('Accuracy', accuracy)
 
 	def setup(self, stage=None):
-        # Assign train/val datasets for use in dataloaders
+        # train/val datasets for use in dataloaders
 		if stage == "fit" or stage is None:
-			dataset_full = NumberplatesDataset(self.data_dir, mode='train')
+			dataset_full = NumberplatesDataset(self.data_dir,
+				mode='train', padding_type=self.padding_type)
 			self.dataset_train, self.dataset_val = random_split(dataset_full, 
 				[round(len(dataset_full) * 0.8), round(len(dataset_full) * 0.2)])
-        # Assign test dataset for use in dataloader(s)
+			# self.dataset_train = NumberplatesDataset(f'{self.data_dir}/train/img',
+			# 	mode='train', padding_type=self.padding_type)
+			# self.dataset_val = NumberplatesDataset(f'{self.data_dir}/val/img',
+			# 	mode='val', padding_type=self.padding_type)
+        # test dataset for use in dataloader
 		if stage == "test" or stage is None:
-			self.dataset_test = NumberplatesDataset(self.data_dir, mode='test')
+			self.dataset_test = NumberplatesDataset(f'{self.data_dir}/test/img',
+				mode='test', padding_type=self.padding_type)
 
 	def train_dataloader(self):
 		return DataLoader(self.dataset_train, batch_size=BATCH_SIZE, num_workers=12)

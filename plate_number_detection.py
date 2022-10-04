@@ -134,7 +134,7 @@ blank_token = 22
 
 
 class PlateNumberDetector:
-    def __init__(self, ocr_checkpoint_path) -> None:
+    def __init__(self, ocr_checkpoint_path, padding_type='reflect_padding') -> None:
         dumpy_loader = DumpyImageLoader
         self.number_plate_key_points_detection = pipeline("number_plate_key_points_detection",
                                                           image_loader=dumpy_loader)
@@ -144,16 +144,15 @@ class PlateNumberDetector:
         self.ocr_model = OCR_CRNN.load_from_checkpoint(ocr_checkpoint_path,
                                                        data_dir='autoriaNumberplateOcrRu-2021-09-01/test/img')
         self.ocr_model.eval()
+        self.padding_type = padding_type
+        self.reflect_padding_transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((56, 224)),
+            torchvision.transforms.Pad((0,56), padding_mode='reflect') # pad to 56*3x224
+        ])
         self.image_transform = torchvision.transforms.Compose([
             torchvision.transforms.Resize((224, 224)),
             torchvision.transforms.ToTensor(),
-            # torchvision.transforms.CenterCrop(224),
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            # torchvision.transforms.ToTensor(),
-            # torchvision.transforms.Resize((64, 256)),
-            # torchvision.transforms.Normalize(
-            #     mean=[0.5] * 3,
-            #     std=[0.5] * 3)
         ])
 
     def detect(self, image: np.ndarray) -> np.array:
@@ -181,6 +180,8 @@ class PlateNumberDetector:
 
     def recognize_numplate_text(self, numplate_img) -> str:
         numplate_img = Image.fromarray(np.uint8(numplate_img))
+        if self.padding_type == 'reflect_padding':
+            numplate_img = self.reflect_padding_transform(numplate_img)
         numplate_img = self.image_transform(numplate_img)
         numplate_img = torch.unsqueeze(numplate_img, 0)
         with torch.no_grad():
