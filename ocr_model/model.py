@@ -6,7 +6,7 @@ from torch.nn import functional as F
 from torch.optim.lr_scheduler import MultiStepLR
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-from dataloader import NumberplatesDataset
+from ocr_model.dataloader import NumberplatesDataset
 from torchvision import models
 
 
@@ -30,6 +30,7 @@ class OCR_CRNN(pl.LightningModule):
 		self.res_net = models.resnet18(pretrained=True)
 		self.gru_input_size = 64
 		self.fc_1 = nn.Linear(1000, 2048)
+		
 		self.gru = nn.GRU(self.gru_input_size, gru_hidden_size, gru_num_layers, 
                           batch_first=True, bidirectional=True)
 		self.fc = nn.Linear(gru_hidden_size * 2, num_classes)
